@@ -3,7 +3,7 @@ import { FlaskRound, Activity, ToothbrushSparkles, Stethoscope, Shield, Heart, S
 const Home = () => {
   return (
     <>
-      <section className='relative z-0 text-white py-20 bg-indigo-400'>
+      <section className='relative z-0 text-white py-20 bg-indigo-500'>
         <div className='mx-auto px-4'>
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-12 items-center'>
             <div>
@@ -44,7 +44,7 @@ const Home = () => {
         </div>
       </section>
       {/* Servicestion section */}
-      <section className='py-20 bg-white'>
+      <section id='services' className='py-20 bg-white'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='text-center mb-16'>
             <span className='text-indigo-600 bg-indigo-700/50 py-2 px-3 rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-indigo-600 hover:text-white hover:transition hover:duration-300 cursor-pointer'>Our Expertise</span>
@@ -146,7 +146,7 @@ const Home = () => {
         </div>
       </section>
       {/* Dental Doctors section */}
-      <section className='py-20 bg-emerald-50'>
+      <section id='doctors' className='py-20 bg-emerald-50'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='text-center mb-16'>
             <span className='text-indigo-600 bg-indigo-700/50 py-2 px-3 rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-indigo-600 hover:text-white hover:transition hover:duration-300 cursor-pointer'>Specialist Practitioners</span>
@@ -223,7 +223,7 @@ const Home = () => {
         </div>
       </section>
       {/* Why Choose section div */}
-      <section className='py-20 bg-indigo-50'>
+      <section id='features' className='py-20 bg-indigo-50'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='text-center mb-16'>
             <span className='text-indigo-600 bg-indigo-700/50 py-2 px-3 rounded-full font-semibold text-xs uppercase tracking-widest hover:bg-indigo-600 hover:text-white hover:transition hover:duration-300 cursor-pointer'>Clinic Highlights</span>
@@ -259,6 +259,34 @@ const Home = () => {
         </div>
       </section>
 
+      {/* CTA Section */}
+      <section id='contact' className='py-20 bg-linear-to-r from-indigo-600 to-blue-700 text-white'>
+        <div className='max-w-4xl mx-auto px-4 text-center'>
+          <h2 className='mb-4 text-3xl font-bold sm:text-4xl'>Ready for Your Next Dental Visit?</h2>
+          <p className='text-indigo-100 text-lg mb-8 max-w-xl mx-auto'>Book your consultation online today and experience friendly, professional dental care.</p>
+          <a href='#' className='bg-white text-indigo-600 px-10 py-4 rounded-xl font-bold text-base hover:bg-indigo-50 transition inline-block shadow-lg'>Book Your Appointment Now</a>
+        </div>
+      </section>
+      {/* footer section */}
+      <footer className='bg-gray-900 text-gray-400 py-12'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='flex items-center justify-between flex-col md:flex-row gap-4'>
+            <div className='flex items-center space-x-2'>
+              <span className='text-indigo-400 font-bold'>
+                <Heart size={28} /> 
+              </span>
+              <a href="/" className='text-2xl font-bold'>Dental<span className="text-indigo-400">Care</span></a>
+            </div>
+            <div className='flex space-x-6 text-sm'>
+              <a href='#services' className=' hover:text-white transition'>Services</a>
+              <a href='#doctors' className=' hover:text-white transition'>Our Doctors</a>
+              <a href='#features' className=' hover:text-white transition'>Why Choose Us</a>
+              <a href='#' className=' hover:text-white transition'>Staff Portal</a>
+            </div>
+            <p className='text-sm'>© 2026 Dental<span className='text-indigo-400'>Care.</span> All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </>
   )
 }

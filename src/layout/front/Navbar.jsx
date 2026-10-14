@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Heart, X, Menu, User, UserPlus, UserShield, CircleUser,LogOut } from 'lucide-react';
+import { Heart, X, Menu, UserRoundKey, UserPlus, UserShield, CircleUser,LogOut } from 'lucide-react';
 import Button from '../../components/ui/Button';
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -84,7 +84,7 @@ const Navbar = () => {
                             onClick={() => { setIsOpenProfile(false); setIsOpen(false); }}
                             className="w-full flex items-center gap-4 px-3 py-1.5 rounded hover:bg-gray-50 cursor-pointer"
                         >
-                            <User size={18} />
+                            <UserRoundKey size={18} />
                             <span>Login</span>
                         </button>
                         <button
