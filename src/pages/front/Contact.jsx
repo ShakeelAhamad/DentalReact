@@ -9,6 +9,7 @@ import {
     Heart,
 } from 'lucide-react';
 import HeroSection from '../../layout/front/HeroSection';
+import usePageTitle from '../../hooks/usePageTitle';
 
 const ContactUs = () => {
     const [formData, setFormData] = useState({
@@ -73,7 +74,10 @@ const ContactUs = () => {
         });
     };
 
+    usePageTitle("Contact Us");
+
     return (
+        
         <>
            <HeroSection pageTitle={"Contact Us"} title={"Contact"} />
            <section className="bg-indigo-50 py-20">

@@ -3,7 +3,9 @@ import { FlaskRound, Activity, ToothbrushSparkles, Stethoscope, Shield, Heart, S
 import WhyChooseSection from './commonSection/WhyChooseSection';
 import DoctorsSection from './commonSection/DoctorsSection';
 import ServicesSection from './commonSection/ServicesSection';
+import usePageTitle from '../../hooks/usePageTitle';
 const Home = () => {
+  usePageTitle("Home");
   return (
     <>
       <section className='relative z-0 text-white py-20 bg-indigo-500'>
