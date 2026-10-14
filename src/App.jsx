@@ -3,7 +3,7 @@ import AuthRoutes from './routes/auth/Auth.routes';
 import FrontRoutes from "./routes/front/Front.routes";
 function App() {
 const allRoutes = [
-    ...AuthRoutes,
+    // ...AuthRoutes,
     ...FrontRoutes
   ];
   console.log(allRoutes);

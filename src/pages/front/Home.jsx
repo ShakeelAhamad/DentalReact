@@ -50,7 +50,7 @@ const Home = () => {
       </section>
       {/* Servicestion section */}
       <ServicesSection/>
-      {/* Dental Doctors section */}
+      {/* Dental Doctors section */} 
       <DoctorsSection />
       {/* Why Choose section div */}
       <WhyChooseSection />

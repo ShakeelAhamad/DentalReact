@@ -22,7 +22,7 @@ const Footer = () => {
         {
             id: 4,
             name: 'Staff Portal',
-            href: '/login',
+            href: '/patient/appointments/book',
         },
     ];
 

@@ -245,7 +245,7 @@ const ContactUs = () => {
                                             {item.title}
                                         </h3>
 
-                                        <p className="break-words text-sm leading-relaxed text-gray-500">
+                                        <p className="wrap-anywhere text-sm leading-relaxed text-gray-500">
                                             {item.detail}
                                         </p>
                                     </div>
