@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import Loader from "../../components/ui/Loader";
 const Login       = lazy(() => import("../../pages/auth/Login"));
-const Signup      = lazy(() => import("../../pages/auth/Signup"));
+const Signup      = lazy(() => import("../../pages/auth/SignUp"));
 
 const AuthRoutes = [
   {
