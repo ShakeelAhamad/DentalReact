@@ -1,8 +1,14 @@
 import React from 'react'
+import HeroSection from '../../layout/front/HeroSection'
+import DoctorsSection from './commonSection/DoctorsSection'
 
 const OurDoctors = () => {
   return (
-    <div>OurDoctors</div>
+    <>
+      <HeroSection pageTitle={"Our Doctors"} title={"Doctor"} />
+      {/* Dental Doctors section */}
+      <DoctorsSection/>
+    </>
   )
 }
 
