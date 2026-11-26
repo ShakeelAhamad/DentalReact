@@ -12,6 +12,7 @@ const AuthRoutes = [
     path: "/signup",
     element: <Suspense fallback={<Loader />}><Signup /></Suspense>,
   },
+  
 ];
 
 export default AuthRoutes;

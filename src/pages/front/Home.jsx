@@ -1,11 +1,31 @@
 import React from 'react';
+import { useAuth } from "../../context/AuthContext";
 import { FlaskRound, Activity, ToothbrushSparkles, Stethoscope, Shield, Heart, Siren, SectionIcon,Clock,ShieldCogCorner,FilePlusCorner} from 'lucide-react';
 import WhyChooseSection from './commonSection/WhyChooseSection';
 import DoctorsSection from './commonSection/DoctorsSection';
 import ServicesSection from './commonSection/ServicesSection';
 import usePageTitle from '../../hooks/usePageTitle';
+import { toast } from "react-hot-toast";
+import { useNavigate } from 'react-router-dom';
 const Home = () => {
   usePageTitle("Home");
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const handleBookAppointment = () => {
+    // Check login
+    if (!user) {
+        toast.error("Please login or register first.");
+        navigate("/signup");
+        return;
+    }
+
+    // Check Patient role
+    if (user.role?.toLowerCase() !== "patient") {
+        toast.error("Only patients can book appointments.");
+        return;
+    }
+    navigate("/patient/dashboard");
+};
   return (
     <>
       <section className='relative z-0 text-white py-20 bg-indigo-500'>
@@ -51,7 +71,9 @@ const Home = () => {
       {/* Servicestion section */}
       <ServicesSection/>
       {/* Dental Doctors section */} 
-      <DoctorsSection />
+      <DoctorsSection 
+      onBookAppointment={handleBookAppointment}
+      />
       {/* Why Choose section div */}
       <WhyChooseSection />
       {/* CTA Section */}

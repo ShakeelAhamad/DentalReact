@@ -1,4 +1,6 @@
 import React from 'react';
+import { useEffect, useState } from "react";
+import homeService from "../../../services/homeService"
 import {
     Sparkles,
     Activity,
@@ -6,82 +8,154 @@ import {
     Shield,
     Heart,
     Siren,
+    Bone,
+    ClipboardList,
+    Clock,
+    Crown,
+    Microscope,
+    Scan,
+    Syringe,
+    UserRound,
+    Wrench,
 } from 'lucide-react';
+
+// Dynamic service icons
+const serviceIcons = {
+    "dental implant consultation": Bone,
+    "orthodontic consultation": Activity,
+    "dental crown": Crown,
+    "root canal treatment": Syringe,
+    "dental filling": Wrench,
+    "tooth extraction": Stethoscope,
+    "teeth whitening": Sparkles,
+    "dental cleaning": ClipboardList,
+    "dental examination": Microscope,
+    "x-ray": Scan,
+};
+const colorStyles = [
+    "bg-indigo-50 text-indigo-600",
+    "bg-teal-50 text-teal-600",
+    "bg-purple-50 text-purple-600",
+    "bg-rose-50 text-rose-600",
+    "bg-amber-50 text-amber-600",
+    "bg-cyan-50 text-cyan-600",
+];
+
+const getServiceIcon = (name) => {
+    return serviceIcons[name?.toLowerCase()] || Stethoscope;
+};
+
+const getInitials = (name) => {
+    return name
+        ?.split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase() || "DR";
+};
 
 const ServicesSection = () => {
     // Dynamic services data
-    const services = [
-        {
-            id: 1,
-            title: 'Dental Cleaning',
-            description:
-                'Professional teeth cleaning to remove plaque and tartar, helping maintain healthy teeth and gums.',
-            duration: 60,
-            price: 80,
-            icon: Sparkles,
-            color: 'red',
-        },
-        {
-            id: 2,
-            title: 'Dental Examination',
-            description:
-                'Comprehensive dental examinations to assess oral health and identify potential problems early.',
-            duration: 30,
-            price: 50,
-            icon: Activity,
-            color: 'blue',
-        },
-        {
-            id: 3,
-            title: 'Dental Consultation',
-            description:
-                'Personalized consultations to discuss symptoms, treatment options, and your dental care plan.',
-            duration: 30,
-            price: 40,
-            icon: Stethoscope,
-            color: 'purple',
-        },
-        {
-            id: 4,
-            title: 'Tooth Extraction',
-            description:
-                'Professional tooth extraction when necessary, with a focus on comfort and appropriate aftercare.',
-            duration: 45,
-            price: 100,
-            icon: Shield,
-            color: 'green',
-        },
-        {
-            id: 5,
-            title: 'Dental Filling',
-            description:
-                'Restore teeth affected by cavities with suitable filling materials to help protect tooth structure.',
-            duration: 45,
-            price: 80,
-            icon: Heart,
-            color: 'yellow',
-        },
-        {
-            id: 6,
-            title: 'Root Canal Treatment',
-            description:
-                'Treatment to address infection or inflammation inside a tooth and help preserve the natural tooth.',
-            duration: 90,
-            price: 250,
-            icon: Siren,
-            color: 'pink',
-        },
-    ];
+    // const services = [
+    //     {
+    //         id: 1,
+    //         title: 'Dental Cleaning',
+    //         description:
+    //             'Professional teeth cleaning to remove plaque and tartar, helping maintain healthy teeth and gums.',
+    //         duration: 60,
+    //         price: 80,
+    //         icon: Sparkles,
+    //         color: 'red',
+    //     },
+    //     {
+    //         id: 2,
+    //         title: 'Dental Examination',
+    //         description:
+    //             'Comprehensive dental examinations to assess oral health and identify potential problems early.',
+    //         duration: 30,
+    //         price: 50,
+    //         icon: Activity,
+    //         color: 'blue',
+    //     },
+    //     {
+    //         id: 3,
+    //         title: 'Dental Consultation',
+    //         description:
+    //             'Personalized consultations to discuss symptoms, treatment options, and your dental care plan.',
+    //         duration: 30,
+    //         price: 40,
+    //         icon: Stethoscope,
+    //         color: 'purple',
+    //     },
+    //     {
+    //         id: 4,
+    //         title: 'Tooth Extraction',
+    //         description:
+    //             'Professional tooth extraction when necessary, with a focus on comfort and appropriate aftercare.',
+    //         duration: 45,
+    //         price: 100,
+    //         icon: Shield,
+    //         color: 'green',
+    //     },
+    //     {
+    //         id: 5,
+    //         title: 'Dental Filling',
+    //         description:
+    //             'Restore teeth affected by cavities with suitable filling materials to help protect tooth structure.',
+    //         duration: 45,
+    //         price: 80,
+    //         icon: Heart,
+    //         color: 'yellow',
+    //     },
+    //     {
+    //         id: 6,
+    //         title: 'Root Canal Treatment',
+    //         description:
+    //             'Treatment to address infection or inflammation inside a tooth and help preserve the natural tooth.',
+    //         duration: 90,
+    //         price: 250,
+    //         icon: Siren,
+    //         color: 'pink',
+    //     },
+    // ];
+
+    const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+        useEffect(() => {
+        const fetchHomeData = async () => {
+            try {
+                setLoading(true);
+                setError("");
+                const data = await homeService.getHomeData();
+                setServices(data.services.filter(item => item.status));
+            } catch (err) {
+                console.error("Home API Error:", err);
+
+                setError(
+                    err.response?.data?.message ||
+                    err.message ||
+                    "Unable to load home data."
+                );
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHomeData();
+    }, []);
+
 
     // Full Tailwind classes so Tailwind can detect them
-    const colorStyles = {
-        red: 'bg-red-100 text-red-600 group-hover:bg-red-600',
-        blue: 'bg-blue-100 text-blue-600 group-hover:bg-blue-600',
-        purple: 'bg-purple-100 text-purple-600 group-hover:bg-purple-600',
-        green: 'bg-green-100 text-green-600 group-hover:bg-green-600',
-        yellow: 'bg-yellow-100 text-yellow-600 group-hover:bg-yellow-600',
-        pink: 'bg-pink-100 text-pink-600 group-hover:bg-pink-600',
-    };
+    // const colorStyles = {
+    //     red: 'bg-red-100 text-red-600 group-hover:bg-red-600',
+    //     blue: 'bg-blue-100 text-blue-600 group-hover:bg-blue-600',
+    //     purple: 'bg-purple-100 text-purple-600 group-hover:bg-purple-600',
+    //     green: 'bg-green-100 text-green-600 group-hover:bg-green-600',
+    //     yellow: 'bg-yellow-100 text-yellow-600 group-hover:bg-yellow-600',
+    //     pink: 'bg-pink-100 text-pink-600 group-hover:bg-pink-600',
+    // };
 
     return (
         <section id="services" className="bg-white py-20">
@@ -104,45 +178,55 @@ const ServicesSection = () => {
                 </div>
 
                 {/* Dynamic Service Cards */}
-                <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
-                    {services.map((service) => {
-                        const Icon = service.icon;
+                {/* Services Section */}
+<div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
 
-                        return (
-                            <div
-                                key={service.id}
-                                className="group rounded-lg border border-[rgba(220,38,38,0.08)] bg-white p-6 shadow-[0_2px_16px_rgba(0,0,0,0.10)] transition duration-300 hover:-translate-y-1.5 hover:border-[rgba(220,38,38,0.2)] hover:shadow-[0_16px_40px_rgba(220,38,38,0.12)]"
-                            >
-                                {/* Service Icon */}
-                                <div
-                                    className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors duration-300 group-hover:text-white ${colorStyles[service.color]}`}
-                                >
-                                    <Icon size={25} />
-                                </div>
+    {services.map((service, index) => {
+        const Icon = getServiceIcon(service.name);
+        const color = colorStyles[index % colorStyles.length];
 
-                                {/* Service Details */}
-                                <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                                    {service.title}
-                                </h3>
-
-                                <p className="mb-6 text-sm leading-relaxed text-slate-500">
-                                    {service.description}
-                                </p>
-
-                                {/* Duration and Price */}
-                                <div className="flex items-center justify-between border-t border-gray-200 pt-6 text-sm">
-                                    <span className="text-xs text-gray-400">
-                                        {service.duration} mins
-                                    </span>
-
-                                    <span className="font-bold text-gray-900">
-                                        ${service.price.toFixed(2)}
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })}
+        return (
+            <div
+                key={service.id}
+                className="group rounded-lg border border-[rgba(220,38,38,0.08)] bg-white p-6 shadow-[0_2px_16px_rgba(0,0,0,0.10)] transition duration-300 hover:-translate-y-1.5 hover:border-[rgba(220,38,38,0.2)] hover:shadow-[0_16px_40px_rgba(220,38,38,0.12)]"
+            >
+                {/* Service Icon */}
+                <div
+                    className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors duration-300 group-hover:bg-indigo-600 group-hover:text-white ${color}`}
+                >
+                    <Icon size={25} />
                 </div>
+
+                {/* Service Details */}
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                    {service.name}
+                </h3>
+
+                <p className="mb-6 text-sm leading-relaxed text-slate-500">
+                    {service.description}
+                </p>
+
+                {/* Duration and Price */}
+                <div className="flex items-center justify-between border-t border-gray-200 pt-6 text-sm">
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                        <Clock size={14} />
+                        {service.duration} mins
+                    </span>
+
+                    <span className="font-bold text-gray-900">
+                        ₹{Number(service.price || 0).toFixed(2)}
+                    </span>
+                </div>
+            </div>
+        );
+    })}
+
+    {!loading && services.length === 0 && (
+        <p className="col-span-full py-8 text-center text-gray-500">
+            No services available.
+        </p>
+    )}
+</div>
             </div>
         </section>
     );

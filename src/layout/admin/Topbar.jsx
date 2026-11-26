@@ -1,0 +1,134 @@
+import React, { useState } from 'react'
+import { logoutUser } from '../../services/authService';
+import { useLocation, useNavigate } from 'react-router-dom'
+import { pageTitles } from '../../config/navigation';
+import { ChevronUp,ChevronDown, Menu, User, Settings, LogOut } from 'lucide-react';
+
+function Topbar({showSidebar,setShowSidebar}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isOpen,setIsOpen] = useState(false);
+  const user = JSON.parse(localStorage.getItem("dentalcare_user") || "{}");
+  const role     = user.role;
+  const fullName = user?.fullName ?? '';
+  const email    = user?.email ?? '';
+  const userName = user?.username ?? 'Admin User';
+  const pageTitle = pageTitles[location.pathname] || `${role} Dashboard`;
+  // Profile image
+const profileImage = user?.profile || null;
+
+const linkPath =
+        role === "Admin"
+            ? 'admin'
+            : role === "Dentist"
+                ? 'dentist'
+                : null;
+// Get first two characters
+const initials = (userName || "AU")
+    .trim()
+    .slice(0, 2)
+    .toUpperCase();
+
+    const closeMenus = async () => {
+        setIsOpen(false);
+        await logoutUser();
+        navigate("/login", { replace: true });
+    };
+
+  return (
+    <div className="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-slate-200 bg-white px-8 shadow-sm">
+      {/* Page Title */}
+      <div className="flex items-center gap-4">
+        <button className='md:hidden'>
+          <Menu onClick={() => setShowSidebar(!showSidebar)}/> 
+        </button>
+        <h1 className="text-xl font-light text-gray-900">{pageTitle}</h1>
+      </div>
+
+      {/* Profile */}
+      <div className="relative">
+         <button onClick={() => setIsOpen(!isOpen)} className="flex items-center justify-baseline gap-4 cursor-pointer transition">
+          {/* letter */}
+          <div className="w-9 h-9 bg-primary/80 text-white rounded-full flex items-center justify-center border-2 border-indigo-500">
+            {profileImage ? (
+                <img
+                    src={profileImage}
+                    alt={fullName || userName}
+                    className="w-full h-full rounded-full object-cover"
+                />
+            ) : (
+                <span className="text-sm font-semibold">
+                    {initials}
+                </span>
+            )}
+          </div>
+          {/* Text */}
+          <span className="hidden sm:inline text-sm text-gray-600 font-light">{userName}</span>
+          {/* icon */}
+          <span className="text-gray-600">
+            {isOpen ? <ChevronUp size={20}/> : <ChevronDown size={20}/>}
+          </span>
+         </button>
+         {/* dropdown box */}
+         {
+          isOpen &&(
+            <div className="absolute right-0 top-14 w-74 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+              {/* Admin flex box */}
+              <div className="flex items-center px-3 py-4 gap-2 border-b border-gray-200">
+                <div className="w-12 h-12 bg-primary-dark/80 rounded-full flex items-center justify-center text-white shrink-0 border-2 border-indigo-500" >
+                   {profileImage ? (
+                        <img
+                            src={profileImage}
+                            alt={fullName || userName}
+                            className="w-full h-full rounded-full object-cover"
+                        />
+                    ) : (
+                        <span className="text-lg font-semibold">
+                            {initials}
+                        </span>
+                    )}
+                </div>
+                <div>
+                  <p className="text-sm text-text-primary font-medium">{fullName}</p>
+                  <p className="text-xs text-gray-500">{email}</p>
+                </div>
+              </div>
+              {/* Menu Content */}
+              <div className="border-b border-gray-200 space-y-2 py-2">
+                {/* profile */}
+                <button
+                  onClick={() => {setIsOpen(false);navigate(`/${linkPath}/profile`)}}
+                  className="w-full flex items-center gap-4 px-3 py-1.5 rounded hover:bg-gray-50 cursor-pointer"
+                >
+                  <User size={18}/>
+                  <span>Profile</span>
+                </button>
+                {/* settings */}
+                <button
+                  onClick={() => {setIsOpen(false);navigate(`/${linkPath}/settings`)}}
+                 className="w-full flex items-center gap-4 px-3 py-1.5 rounded hover:bg-gray-50 cursor-pointer"
+                >
+                  <Settings  size={18}/>
+                  <span>Settings</span>
+                </button>
+              </div>
+              {/* logout buton */}
+              <div className="py-2">
+                <button 
+                onClick={closeMenus}
+                // onClick={() =>{alert("Logout Comming");setIsOpen(false);navigate("/login")}}
+                className="w-full flex items-center gap-4 px-3 py-1.5 rounded hover:bg-rose-50 cursor-pointer">
+                  <LogOut size={18}/>
+                  <span className="text-md text-text-primary font-light">Logout</span>
+                </button>
+              </div>
+            </div>
+          )
+         }
+      </div>
+
+    </div>
+  )
+}
+
+export default Topbar

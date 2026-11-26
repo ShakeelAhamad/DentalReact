@@ -1,376 +1,376 @@
-import React, { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+
+import {useEffect,useMemo, useState } from "react";
 import {
   CalendarDays,
-  Plus,
-  Clock3,
-  Stethoscope,
-  ClipboardList,
-  CheckCircle2,
   Clock,
+  UserRound,
+  Wallet,
+  Plus,
+  ClipboardList,
+  CalendarCheck,
   CircleCheck,
+  CircleX,
+  Clock3,
   ChevronRight,
-  CalendarX,
-  DollarSign,
+  Filter,
 } from "lucide-react";
+import { getPatientAppointments } from "../../../services/patients/appointmentService";
+import usePageTitle from "../../../hooks/usePageTitle";
 
-const PatientAppointments = ({ appointments = [] }) => {
-  const [activeFilter, setActiveFilter] = useState("all");
 
-  const filters = [
-    { label: "All Bookings", value: "all" },
-    { label: "Pending", value: "pending" },
-    { label: "Confirmed", value: "confirmed" },
-    { label: "Completed", value: "completed" },
-  ];
+import {
+  appointmentFilters,
+} from "../../../data/appointmentsData";
 
-  const getStatus = (appointment) =>
-    String(appointment.status || "Pending").toLowerCase();
+const statusStyles = {
+  Pending: "bg-amber-100 text-amber-700",
+  Confirmed: "bg-green-100 text-green-700",
+  Completed: "bg-purple-100 text-purple-700",
+  Cancelled: "bg-red-100 text-red-700",
+};
 
-  const getAppointmentId = (appointment) =>
-    appointment.id ?? appointment.appointmentId;
+const statusIcons = {
+  Pending: Clock3,
+  Confirmed: CalendarCheck,
+  Completed: CircleCheck,
+  Cancelled: CircleX,
+};
 
-  const getAppointmentDate = (appointment) => {
-    const value = appointment.appointmentDate || appointment.date;
-    if (!value) return null;
+const MyAppointments = () => {
+  usePageTitle("My Appointments");
+  const [activeFilter, setActiveFilter] = useState("All Bookings");
+  const [searchTerm, setSearchTerm] = useState("");
 
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
-  };
+  const [appointmentsData, setAppointmentsData] = useState([]);
 
-  const formatDate = (date) => {
-    if (!date) return { month: "--", day: "--", full: "Date unavailable" };
-
-    return {
-      month: date.toLocaleDateString("en-US", { month: "short" }),
-      day: date.toLocaleDateString("en-US", { day: "2-digit" }),
-      full: date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-      }),
-    };
-  };
-
-  const getServiceName = (appointment) =>
-    appointment.service?.name ||
-    appointment.service?.serviceName ||
-    appointment.serviceName ||
-    "Dental Appointment";
-
-  const getDentistName = (appointment) => {
-    const name =
-      appointment.dentist?.fullName ||
-      appointment.dentistName ||
-      appointment.dentist?.user?.username;
-
-    if (!name) return "Not assigned";
-
-    return name.startsWith("Dr.") ? name : `Dr. ${name}`;
-  };
-
-  const getSpecialization = (appointment) =>
-    appointment.dentist?.specialization ||
-    appointment.specialization ||
-    "Dental Care";
-
-  const getStartTime = (appointment) =>
-    appointment.startTime || appointment.time || "";
-
-  const getEndTime = (appointment) => appointment.endTime || "";
-
-  const formatTime = (time) => {
-    if (!time) return "";
-
-    // Supports TimeOnly values such as "11:00:00".
-    const match = String(time).match(/^(\d{1,2}):(\d{2})/);
-
-    if (!match) return time;
-
-    const hours = Number(match[1]);
-    const minutes = match[2];
-    const period = hours >= 12 ? "PM" : "AM";
-    const formattedHour = hours % 12 || 12;
-
-    return `${formattedHour}:${minutes} ${period}`;
-  };
-
-  const getPrice = (appointment) =>
-    appointment.service?.price ??
-    appointment.estimatedPrice ??
-    appointment.price ??
-    null;
-
-  const formatPrice = (price) => {
-    if (price === null || price === undefined || price === "") {
-      return "Price unavailable";
-    }
-
-    const amount = Number(price);
-
-    return Number.isFinite(amount)
-      ? `Estimated $${amount.toFixed(2)}`
-      : `Estimated ${price}`;
-  };
-
-  const statusStyles = (status) => {
-    switch (status) {
-      case "pending":
-        return "bg-amber-100 text-amber-700";
-      case "confirmed":
-        return "bg-green-100 text-green-700";
-      case "completed":
-        return "bg-purple-100 text-purple-700";
-      case "cancelled":
-      case "canceled":
-        return "bg-red-100 text-red-700";
-      case "rejected":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  const StatusIcon = ({ status }) => {
-    if (status === "completed") return <CircleCheck size={14} />;
-    if (status === "confirmed") return <CheckCircle2 size={14} />;
-    if (status === "cancelled" || status === "canceled") {
-      return <CalendarX size={14} />;
-    }
-    return <Clock size={14} />;
-  };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const filteredAppointments = useMemo(() => {
-    return [...appointments]
-      .filter((appointment) => {
-        if (activeFilter === "all") return true;
-        return getStatus(appointment) === activeFilter;
-      })
-      .sort((a, b) => {
-        const dateA = getAppointmentDate(a)?.getTime() ?? 0;
-        const dateB = getAppointmentDate(b)?.getTime() ?? 0;
-        return dateB - dateA;
-      });
-  }, [appointments, activeFilter]);
+    return appointmentsData.filter((appointment) => {
+        const matchesStatus =
+            activeFilter === "All Bookings" ||
+            appointment.status === activeFilter;
 
-  const counts = useMemo(() => {
-    return appointments.reduce(
-      (result, appointment) => {
-        const status = getStatus(appointment);
-        result.all += 1;
+        const searchText = searchTerm.toLowerCase().trim();
 
-        if (result[status] !== undefined) {
-          result[status] += 1;
+        const matchesSearch =
+            appointment.serviceName.toLowerCase().includes(searchText) ||
+            appointment.dentistName.toLowerCase().includes(searchText) ||
+            appointment.dentistSpecialization.toLowerCase().includes(searchText);
+
+        return matchesStatus && matchesSearch;
+    });
+}, [appointmentsData, activeFilter, searchTerm]);
+
+  const formatDate = (date) => {
+    if (!date) {
+        return { month: "", day: "" };
+    }
+
+    let parsedDate;
+
+    // Format: 2026-09-15
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        parsedDate = new Date(`${date}T12:00:00`);
+    }
+    // Format: Oct 06, 2026
+    else {
+        parsedDate = new Date(date);
+    }
+
+    // Handle invalid dates
+    if (isNaN(parsedDate.getTime())) {
+        return { month: "", day: "" };
+    }
+
+    return {
+        month: parsedDate.toLocaleDateString("en-US", {
+            month: "short",
+        }),
+        day: parsedDate.toLocaleDateString("en-US", {
+            day: "2-digit",
+        }),
+    };
+};
+
+
+  const filterCounts = useMemo(() => {
+    return {
+        "All Bookings": appointmentsData.length,
+
+        ...Object.fromEntries(
+            appointmentFilters
+                .filter((filter) => filter !== "All Bookings")
+                .map((filter) => [
+                    filter,
+                    appointmentsData.filter(
+                        (appointment) => appointment.status === filter
+                    ).length,
+                ])
+        ),
+    };
+}, [appointmentsData]);
+
+  const getFilterStyle = (filter) => {
+    if (activeFilter === filter) {
+      return "bg-indigo-600 text-white border-indigo-600";
+    }
+
+    const colors = {
+      Pending: "text-amber-700 hover:bg-amber-50",
+      Confirmed: "text-green-700 hover:bg-green-50",
+      Completed: "text-purple-700 hover:bg-purple-50",
+      Cancelled: "text-red-700 hover:bg-red-50",
+    };
+
+    return `bg-white border-gray-200 ${colors[filter] || "text-gray-600 hover:bg-gray-50"}`;
+  };
+
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const data = await getPatientAppointments();
+
+            setAppointmentsData(data);
+        } catch (error) {
+            setError(
+                error.response?.data?.message ||
+                error.message ||
+                "Unable to load appointments."
+            );
+        } finally {
+            setLoading(false);
         }
+    };
 
-        return result;
-      },
-      {
-        all: 0,
-        pending: 0,
-        confirmed: 0,
-        completed: 0,
-      }
-    );
-  }, [appointments]);
-
+    fetchAppointments();
+}, []);
   return (
-    <div className="space-y-6">
-      {/* Page Heading */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            My Appointments
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            View and manage your dental appointments.
+    <section className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-25">
+      <div className="space-y-6">
+        {/* Page header */}
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              My Appointments
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage and track your dental appointments.
+            </p>
+          </div>
+
+          <a
+            href="/patient/book/appointments"
+            className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            <Plus size={18} />
+            Book New Appointment
+          </a>
+        </div>
+
+        {/* Status filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {appointmentFilters.map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => setActiveFilter(filter)}
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${getFilterStyle(filter)}`}
+            >
+              {filter === "All Bookings" && (
+                <ClipboardList size={14} />
+              )}
+
+              {filter === "Pending" && <Clock3 size={14} />}
+
+              {filter === "Confirmed" && (
+                <CalendarCheck size={14} />
+              )}
+
+              {filter === "Completed" && (
+                <CircleCheck size={14} />
+              )}
+
+              {filter === "Cancelled" && (
+                <CircleX size={14} />
+              )}
+
+              {filter}
+
+              <span
+                className={`rounded-full px-1.5 py-0.5 ${
+                  activeFilter === filter
+                    ? "bg-white/20"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {filterCounts[filter]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:max-w-md">
+            <Filter
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search service, dentist..."
+              className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            />
+          </div>
+
+          <p className="text-sm text-gray-500">
+            Showing{" "}
+            <span className="font-semibold text-gray-800">
+              {filteredAppointments.length}
+            </span>{" "}
+            of {appointmentsData.length} appointments
           </p>
         </div>
 
-        <Link
-          to="/patient/appointments/book"
-          className="inline-flex self-start items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          <Plus size={18} />
-          Book New Appointment
-        </Link>
-      </div>
-
-      {/* Status Filters */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {filters.map((filter) => {
-          const isActive = activeFilter === filter.value;
-
-          return (
-            <button
-              key={filter.value}
-              type="button"
-              onClick={() => setActiveFilter(filter.value)}
-              className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                isActive
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              {filter.label}
-              <span
-                className={`ml-2 rounded-md px-1.5 py-0.5 ${
-                  isActive ? "bg-white/20" : "bg-gray-100"
-                }`}
-              >
-                {counts[filter.value]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Appointment List */}
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-        {filteredAppointments.length === 0 ? (
-          <div className="px-6 py-14 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-              <CalendarDays size={30} />
-            </div>
-
-            <h3 className="text-lg font-bold text-gray-900">
-              No appointments found
-            </h3>
-
-            <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
-              {activeFilter === "all"
-                ? "You haven't booked any dental appointments yet."
-                : `You don't have any ${activeFilter} appointments.`}
-            </p>
-
-            {activeFilter === "all" && (
-              <Link
-                to="/patient/appointments/book"
-                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-              >
-                <Plus size={17} />
-                Book Your First Appointment
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {filteredAppointments.map((appointment, index) => {
-              const id = getAppointmentId(appointment);
-              const date = formatDate(getAppointmentDate(appointment));
-              const status = getStatus(appointment);
-              const startTime = formatTime(getStartTime(appointment));
-              const endTime = formatTime(getEndTime(appointment));
-              const price = getPrice(appointment);
-
-              return (
-                <div
-                  key={
-                    id ??
-                    `${getServiceName(appointment)}-${getAppointmentDate(appointment)?.getTime() ?? index}`
-                  }
-                  className="flex flex-col justify-between gap-4 p-5 transition hover:bg-gray-50 sm:p-6 md:flex-row md:items-center"
-                >
-                  {/* Appointment Information */}
-                  <div className="flex min-w-0 items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-blue-50 font-bold text-blue-600">
-                      <span className="text-xs uppercase">
-                        {date.month}
-                      </span>
-                      <span className="text-lg leading-tight">
-                        {date.day}
-                      </span>
-                    </div>
-
-                    <div className="min-w-0 space-y-1.5">
-                      <h3 className="text-base font-bold text-gray-900">
-                        {getServiceName(appointment)}
-                      </h3>
-
-                      <p className="flex flex-wrap items-center gap-1 text-sm text-gray-600">
-                        <Stethoscope
-                          size={14}
-                          className="shrink-0 text-gray-400"
-                        />
-                        Dentist:
-                        <strong className="font-semibold text-gray-800">
-                          {getDentistName(appointment)}
-                        </strong>
-                        <span className="text-gray-500">
-                          ({getSpecialization(appointment)})
-                        </span>
-                      </p>
-
-                      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarDays size={13} />
-                          {date.full}
-                        </span>
-
-                        {(startTime || endTime) && (
-                          <span className="inline-flex items-center gap-1">
-                            <Clock3 size={13} />
-                            Time: {startTime || "--"}
-                            {endTime ? ` - ${endTime}` : ""}
-                          </span>
-                        )}
-                      </p>
-
-                      <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                        <DollarSign size={13} />
-                        {formatPrice(price)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Status and Action */}
-                  <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 md:shrink-0 md:justify-end md:border-t-0 md:pt-0">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusStyles(status)}`}
-                    >
-                      <StatusIcon status={status} />
-                      {appointment.status || "Pending"}
+        {/* Appointment list */}
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+          {loading ? (
+                <div className="flex justify-center items-center py-16">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
+                    <span className="ml-3 text-sm text-gray-500">
+                        Loading appointments...
                     </span>
+                </div>
+            ) : error ? (
+                <div className="py-12 text-center">
+                    <p className="text-sm text-red-600">{error}</p>
 
-                    {id != null ? (
-                      <Link
-                        to={`/patient/appointments/${id}`}
-                        className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            ) : filteredAppointments.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {filteredAppointments.map((appointment) => {
+                const { month, day } = formatDate(appointment.bookedDate);
+                const StatusIcon = statusIcons[appointment.status];
+
+                return (
+                  <div
+                    key={appointment.id}
+                    className="flex flex-col justify-between gap-4 p-6 transition hover:bg-gray-50 md:flex-row md:items-center"
+                  >
+                    {/* Date and appointment details */}
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-indigo-50 font-bold text-indigo-600">
+                        <span className="text-xs uppercase">
+                          {month}
+                        </span>
+                        <span className="text-lg leading-tight">
+                          {day}
+                        </span>
+                      </div>
+
+                      <div className="min-w-0 space-y-2">
+                        <h3 className="text-base font-bold text-gray-900">
+                          {appointment.serviceName}
+                        </h3>
+
+                        <p className="flex flex-wrap items-center gap-1 text-sm text-gray-600">
+                          <UserRound
+                            size={15}
+                            className="shrink-0 text-gray-400"
+                          />
+                          Dentist:
+                          <strong className="text-gray-800">
+                            {appointment.dentistName}
+                          </strong>
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          {appointment.dentistSpecialization}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-400">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock size={14} />
+                            {appointment.startTime} -{" "}
+                            {appointment.endTime}
+                          </span>
+
+                          <span className="inline-flex items-center gap-1.5">
+                            <Wallet size={14} />
+                            Estimated $
+                            {Number(appointment.servicePrice || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status and action */}
+                    <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 md:justify-end md:border-0 md:pt-0">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[appointment.status]}`}
+                      >
+                        <StatusIcon size={13} />
+                        {appointment.status}
+                      </span>
+
+                      <a
+                        href={`/patient/appointments/${appointment.id}`}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
                       >
                         View Details
                         <ChevronRight size={14} />
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-gray-400">
-                        Details unavailable
-                      </span>
-                    )}
+                      </a>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+              <div className="mb-4 rounded-full bg-indigo-50 p-4 text-indigo-600">
+                <CalendarDays size={32} />
+              </div>
 
-      {/* Bottom Summary */}
-      <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4">
-        <div className="rounded-lg bg-white p-2 text-blue-600">
-          <ClipboardList size={21} />
-        </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                No appointments found
+              </h3>
 
-        <div>
-          <p className="text-sm font-semibold text-gray-800">
-            {filteredAppointments.length} appointment
-            {filteredAppointments.length !== 1 ? "s" : ""} displayed
-          </p>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Use the filters above to view appointments by status.
-          </p>
+              <p className="mt-2 max-w-sm text-sm text-gray-500">
+                Try another status filter or search for a different
+                dentist or service.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFilter("All Bookings");
+                  setSearchTerm("");
+                }}
+                className="mt-5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
-export default PatientAppointments;
+export default MyAppointments;

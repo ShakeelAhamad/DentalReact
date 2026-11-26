@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Heart,
   Mail,
@@ -9,32 +10,144 @@ import {
   EyeOff,
   LogIn,
   ShieldCheck,
+  LoaderCircle,
 } from "lucide-react";
 
+import { loginUser } from "../../services/authService";
+import { getApiErrorMessage } from "../../utils/apiError";
+import { useAuth } from "../../context/AuthContext";
+import usePageTitle from "../../hooks/usePageTitle";
+
+
 const Login = () => {
+  const navigate = useNavigate();
+  usePageTitle("Login");
+
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [errors, setErrors] = useState({});
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
+  const validateForm = () => {
+    const newErrors = {};
+    const email = formData.email.trim();
+
+    if (!email) {
+      newErrors.email = "Email address is required.";
+    } else if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Password is required.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+
+    setErrors((previous) => ({
+      ...previous,
+      [name]: "",
+    }));
+
+    setFormError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login Data:", formData);
 
-    // Connect your login API here.
+    if (loading) return;
+
+    setFormError("");
+
+    if (!validateForm()) return;
+
+    setLoading(true);
+
+    try {
+      const data = await loginUser(formData);
+     // Adapt this to your actual API response and role names.
+      toast.success("Login successful! Welcome back.");
+      const role = data.details?.role ?? data.details?.role.toLowerCase();
+      if (role === "Admin") {
+        navigate("/admin/dashboard", { replace: true });
+      } else if (role === "Dentist") {
+        navigate("/dentist/dashboard", { replace: true });
+      } else if (role === "Patient") {
+        navigate("/patient/dashboard", { replace: true });
+      } else {
+        toast.error("Your account role is not recognized.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      // Map server validation errors to their respective fields.
+      const serverErrors = error.response?.data?.errors;
+      if (serverErrors) {
+        const fieldErrors = {};
+        Object.entries(serverErrors).forEach(([key, messages]) => {
+          const field = key.toLowerCase();
+          if (field.includes("email")) {
+            fieldErrors.email = Array.isArray(messages)
+              ? messages[0]
+              : messages;
+              toast.error(fieldErrors.email);
+          } else if (field.includes("password")) {
+            fieldErrors.password = Array.isArray(messages)
+              ? messages[0]
+              : messages;
+              toast.error(fieldErrors.password);
+          }
+        });
+        
+        setErrors((previous) => ({
+          ...previous,
+          ...fieldErrors,
+        }));
+      }
+
+      if (
+        error.message ===
+        "The server did not return an access token."
+      ) {
+        setFormError(error.message);
+        toast.error(error.message);
+      } else {
+        setFormError(getApiErrorMessage(error));
+        toast.error(getApiErrorMessage(error));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const inputClass = (field) =>
+    `w-full rounded-xl border bg-gray-50 py-3.5 pl-12 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:bg-white focus:ring-4 ${
+      errors[field]
+        ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+        : "border-gray-200 focus:border-indigo-500 focus:ring-indigo-100"
+    }`;
+
   return (
     <section className="relative z-0 flex min-h-screen items-center justify-center bg-gray-100 px-4 py-25 sm:px-6">
       <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-xl md:grid-cols-2">
+
         {/* Left Welcome Panel */}
         <div className="relative flex min-h-[350px] flex-col justify-between overflow-hidden bg-indigo-600 p-8 text-white sm:p-10 lg:p-12">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10" />
@@ -46,7 +159,7 @@ const Login = () => {
                 <Heart size={28} />
               </div>
               <span className="text-2xl font-bold tracking-wide">
-                Dental<span className="text-indigo-400">Care</span>
+                Dental<span className="text-indigo-300">Care</span>
               </span>
             </Link>
           </div>
@@ -57,10 +170,10 @@ const Login = () => {
             </h1>
 
             <p className="max-w-md text-base leading-7 text-indigo-100">
-              Book your dental appointments with ease and take the next step
-              toward a healthier, brighter smile. We're happy to have you back!
-              Manage your appointments and enjoy personalized dental care with
-              DentalCare.
+              Book your dental appointments with ease and take
+              the next step toward a healthier, brighter smile.
+              Manage your appointments and enjoy personalized
+              dental care with DentalCare.
             </p>
 
             <div className="mt-8 flex items-center gap-3">
@@ -80,7 +193,6 @@ const Login = () => {
           </div>
         </div>
 
-
         {/* Right Login Form */}
         <div className="flex items-center justify-center p-8 sm:p-12">
           <div className="w-full max-w-md">
@@ -93,7 +205,21 @@ const Login = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {formError && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {formError}
+              </div>
+            )}
+
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              className="space-y-6"
+            >
               {/* Email */}
               <div>
                 <label
@@ -106,7 +232,9 @@ const Login = () => {
                 <div className="relative">
                   <Mail
                     size={19}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+                      errors.email ? "text-red-500" : "text-gray-400"
+                    }`}
                   />
 
                   <input
@@ -117,10 +245,23 @@ const Login = () => {
                     onChange={handleChange}
                     placeholder="you@example.com"
                     autoComplete="email"
-                    required
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3.5 pl-12 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                    disabled={loading}
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={
+                      errors.email ? "email-error" : undefined
+                    }
+                    className={inputClass("email")}
                   />
                 </div>
+
+                {errors.email && (
+                  <p
+                    id="email-error"
+                    className="mt-2 text-sm text-red-600"
+                  >
+                    {errors.email}
+                  </p>
+                )}
               </div>
 
               {/* Password */}
@@ -144,7 +285,11 @@ const Login = () => {
                 <div className="relative">
                   <LockKeyhole
                     size={19}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+                      errors.password
+                        ? "text-red-500"
+                        : "text-gray-400"
+                    }`}
                   />
 
                   <input
@@ -155,14 +300,20 @@ const Login = () => {
                     onChange={handleChange}
                     placeholder="Enter your password"
                     autoComplete="current-password"
-                    required
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3.5 pl-12 pr-12 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                    disabled={loading}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={
+                      errors.password ? "password-error" : undefined
+                    }
+                    className={`${inputClass("password")} pr-12`}
                   />
 
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-indigo-600"
                   >
                     {showPassword ? (
@@ -172,6 +323,15 @@ const Login = () => {
                     )}
                   </button>
                 </div>
+
+                {errors.password && (
+                  <p
+                    id="password-error"
+                    className="mt-2 text-sm text-red-600"
+                  >
+                    {errors.password}
+                  </p>
+                )}
               </div>
 
               {/* Remember me */}
@@ -189,17 +349,29 @@ const Login = () => {
                 </label>
               </div>
 
-              {/* Submit button */}
+              {/* Submit */}
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <LogIn size={18} />
-                Sign In
+                {loading ? (
+                  <>
+                    <LoaderCircle
+                      size={18}
+                      className="animate-spin"
+                    />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={18} />
+                    Sign In
+                  </>
+                )}
               </button>
             </form>
 
-            {/* Create account */}
             <p className="mt-8 text-center text-sm text-gray-500">
               Don't have an account?{" "}
               <Link
